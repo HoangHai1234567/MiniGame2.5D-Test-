@@ -3,92 +3,76 @@ using UnityEngine;
 public class PlayerShoot : MonoBehaviour
 {
     [Header("Arrow")]
-    public GameObject arrowPrefab;
+    public Arrow arrowPrefab;
     public Transform firePos;
 
-    [Header("Arc Settings")]
-    public float arcHeight = 3f;              // đỉnh parabola cao hơn điểm cao nhất (start/target) bao nhiêu
-    public float minArcHeight = 1f;           // tối thiểu để luôn có cong
-    public float extraHeightPerUnit = 0.1f;   // tăng thêm theo khoảng cách (tuỳ chỉnh)
-
-    [Header("Visual (optional)")]
-    public Transform bow;                     // transform của cung/tay để xoay theo hướng bắn
+    [Header("Parabola Settings")]
+    public float baseArcHeight = 3f;
+    public float extraHeightPerDistance = 0.3f;
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            ShootToMouseArc();
+            AutoShootRandomEnemy();
         }
     }
 
-    void ShootToMouseArc()
+    void AutoShootRandomEnemy()
     {
-        if (!arrowPrefab || !firePos) return;
-        if (Camera.main == null) return;
+        EnemyIdentity[] enemies = FindObjectsOfType<EnemyIdentity>();
 
-        // 1. Lấy vị trí click trong world
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorld.z = 0f;
-
-        Vector2 start = firePos.position;
-        Vector2 end = mouseWorld;
-        float dx = end.x - start.x;
-        float distance = Vector2.Distance(start, end);
-
-        // 2. Lấy gravity thực tế (có tính gravityScale của arrow)
-        Rigidbody2D prefabRb = arrowPrefab.GetComponent<Rigidbody2D>();
-        float gravityScale = prefabRb ? prefabRb.gravityScale : 1f;
-        float gAbs = Mathf.Abs(Physics2D.gravity.y * gravityScale);
-
-        if (gAbs < 0.0001f)
+        if (enemies.Length == 0)
         {
-            // không có gravity → fallback bắn thẳng
-            Vector2 dir = (end - start).normalized;
-            GameObject arrowLinear = Instantiate(arrowPrefab, start, Quaternion.identity);
-            Arrow arrowComp = arrowLinear.GetComponent<Arrow>();
-            if (arrowComp != null)
-                arrowComp.Launch(dir * 10f);   // 🔹 chỉ 1 tham số
+            Debug.Log("[PlayerShoot] Không có enemy → không bắn");
             return;
         }
 
-        // 3. Chọn độ cao đỉnh parabola (apexY)
-        float baseHeight = Mathf.Max(start.y, end.y);
-        float extra = arcHeight + distance * extraHeightPerUnit;
-        if (extra < minArcHeight) extra = minArcHeight;
+        EnemyIdentity target = enemies[Random.Range(0, enemies.Length)];
+        ShootArrowTo(target);
+    }
 
-        float apexY = baseHeight + extra;
+    void ShootArrowTo(EnemyIdentity enemy)
+    {
+        Vector3 startPos = firePos.position;
+        Vector3 targetPos = enemy.transform.position;
 
-        // 4. Tính toán vy0 & thời gian bay
-        float h1 = apexY - start.y;   // từ start lên đến apex
-        float h2 = apexY - end.y;     // từ apex rơi xuống target
+        float dist = Vector2.Distance(startPos, targetPos);
+        float arcHeight = baseArcHeight + dist * extraHeightPerDistance;
 
-        if (h1 < 0.01f) h1 = 0.01f;
-        if (h2 < 0.01f) h2 = 0.01f;
+        // ---- Tính velocity parabol an toàn, không NaN ----
+        Vector2 velocity = CalculateParabolaVelocity(startPos, targetPos, arcHeight);
 
-        // vy0^2 = 2 * g * h1
-        float vy0 = Mathf.Sqrt(2f * gAbs * h1);
-        float tUp = vy0 / gAbs;
-        float tDown = Mathf.Sqrt(2f * h2 / gAbs);
-        float tTotal = tUp + tDown;
-
-        float vx0 = dx / tTotal;
-
-        Vector2 initialVelocity = new Vector2(vx0, vy0);
-
-        // 5. Tạo arrow & launch
-        GameObject arrowObj = Instantiate(arrowPrefab, start, Quaternion.identity);
-        Arrow arrow = arrowObj.GetComponent<Arrow>();
-        if (arrow != null)
+        // Nếu velocity sai → không bắn
+        if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y))
         {
-            arrow.Launch(initialVelocity);     // 🔹 chỉ 1 tham số
+            Debug.LogError("[Shoot] Velocity bị NaN! Hủy bắn mũi tên.");
+            return;
         }
 
-        // 6. Xoay cung theo hướng bắn (không bắt buộc)
-        if (bow != null)
-        {
-            float angle = Mathf.Atan2(initialVelocity.y, initialVelocity.x) * Mathf.Rad2Deg;
-            bow.rotation = Quaternion.Euler(0f, 0f, angle);
-        }
+        // ---- Tạo arrow và bắn ----
+        Arrow arrow = Instantiate(arrowPrefab, startPos, Quaternion.identity);
+        arrow.SetTargetEnemy(enemy.EnemyId);
+        arrow.Launch(velocity);
+    }
+
+    // -----------------------------
+    // ★ Công thức parabol SAFE
+    // -----------------------------
+    Vector2 CalculateParabolaVelocity(Vector2 start, Vector2 end, float height)
+    {
+        float gravity = Mathf.Abs(Physics2D.gravity.y);
+
+        Vector2 displacement = end - start;
+
+        float t1 = Mathf.Sqrt(2 * height / gravity);
+        float t2 = Mathf.Sqrt(2 * Mathf.Max(0, height - displacement.y) / gravity);
+
+        float time = t1 + t2;
+
+        float velX = displacement.x / time;
+        float velY = Mathf.Sqrt(2 * gravity * height);
+
+        return new Vector2(velX, velY);
     }
 }

@@ -3,122 +3,93 @@ using UnityEngine;
 
 public class SkeletonRagdoll : MonoBehaviour
 {
-    [Header("Parts")]
-    public Transform head;              // skeleton_head
-    public Transform[] bodyParts;       // 6 phần còn lại: chest, arm_r, leg_l, pelvis, leg_r, sword_arm_l
+    [Header("Skeleton Parts")]
+    public Transform head;
+    public Transform[] bodyParts;
 
     [Header("Physics")]
-    public float partGravityScale = 3f;
-    public float minUpForce = 3f;
-    public float maxUpForce = 6f;
-    public float sideForce = 2f;
-    public float maxTorque = 200f;
-    public float partLifeTime = 4f;
+    public float gravity = 3f;
+    public float upForceMin = 6f;
+    public float upForceMax = 10f;
+    public float sideForce = 3f;
+    public float torque = 200f;
+    public float lifeTime = 4f;
 
-    [Header("Disable on death")]
-    public bool disableAnimator = true;
-    public bool disableRootCollider = true;
-    public MonoBehaviour[] scriptsToDisable;   // kéo Skeleton AI, di chuyển... vào đây
+    [Header("Disable On Death")]
+    public Animator anim;
+    public MonoBehaviour[] scriptsToDisable;
+    public Collider2D rootCollider;
 
     bool isDead = false;
 
-    /// <summary>
-    /// Gọi khi Arrow trúng: arrow găm vào đầu, cả body vỡ thành từng part
-    /// </summary>
     public void ActivateRagdoll(Arrow arrow, Vector2 hitDirection)
     {
         if (isDead) return;
         isDead = true;
 
-        // Tắt animator / collider / script logic trên root
-        if (disableAnimator)
-        {
-            Animator anim = GetComponent<Animator>();
-            if (anim) anim.enabled = false;
-        }
+        // Disable logic scripts
+        if (anim != null) anim.enabled = false;
+        if (rootCollider != null) rootCollider.enabled = false;
 
-        if (disableRootCollider)
-        {
-            Collider2D col = GetComponent<Collider2D>();
-            if (col) col.enabled = false;
-        }
+        foreach (var s in scriptsToDisable)
+            if (s != null) s.enabled = false;
 
-        if (scriptsToDisable != null)
-        {
-            foreach (var s in scriptsToDisable)
-                if (s) s.enabled = false;
-        }
-
-        // Gom tất cả part: head + body
+        // Collect all parts
         List<Transform> parts = new List<Transform>();
         if (head != null) parts.Add(head);
         foreach (var p in bodyParts)
-            if (p != null && !parts.Contains(p)) parts.Add(p);
+            if (p != null) parts.Add(p);
 
-        Rigidbody2D headRb = null;
-        Vector2 headPos = head != null ? (Vector2)head.position : (Vector2)transform.position;
+        Rigidbody2D headRB = null;
+        Vector2 headPos = head != null ? head.position : transform.position;
 
-        // Tách từng part ra khỏi root, add rigidbody và cho rơi
-        foreach (Transform t in parts)
+        // Detach body parts
+        foreach (Transform part in parts)
         {
-            if (t == null) continue;
+            if (part == null) continue;
 
-            // tách khỏi Skeleton (root)
-            t.SetParent(null);
+            part.SetParent(null);
 
-            Rigidbody2D rb = t.GetComponent<Rigidbody2D>();
-            if (rb == null) rb = t.gameObject.AddComponent<Rigidbody2D>();
+            Rigidbody2D rb = part.GetComponent<Rigidbody2D>();
+            if (rb == null) rb = part.gameObject.AddComponent<Rigidbody2D>();
 
-            rb.gravityScale = partGravityScale;
+            rb.gravityScale = gravity;
             rb.constraints = RigidbodyConstraints2D.None;
 
-            // random hướng sang trái/phải
-            float side = Random.value < 0.5f ? -1f : 1f;
-            float up = Random.Range(minUpForce, maxUpForce);
-            Vector2 force = new Vector2(side * sideForce, up);
+            float up = Random.Range(upForceMin, upForceMax);
+            float side = Random.value < 0.5f ? -sideForce : sideForce;
 
-            rb.AddForce(force, ForceMode2D.Impulse);
-            rb.AddTorque(Random.Range(-maxTorque, maxTorque), ForceMode2D.Impulse);
+            rb.AddForce(new Vector2(side, up), ForceMode2D.Impulse);
+            rb.AddTorque(Random.Range(-torque, torque), ForceMode2D.Impulse);
 
-            if (t == head) headRb = rb;
+            if (part == head) headRB = rb;
 
-            Destroy(t.gameObject, partLifeTime);
+            Destroy(part.gameObject, lifeTime);
         }
 
-        // Găm arrow vào HEAD
-        if (arrow != null && head != null && headRb != null)
+        // Attach arrow to head
+        if (arrow != null && headRB != null)
         {
-            Rigidbody2D arrowRb = arrow.rb;
-            if (!arrowRb) arrowRb = arrow.GetComponent<Rigidbody2D>();
+            Rigidbody2D arrowRB = arrow.rigidBody2D;
+            arrowRB.velocity = Vector2.zero;
+            arrowRB.angularVelocity = 0f;
 
-            if (arrowRb != null)
-            {
-                // dừng arrow
-                arrowRb.velocity = Vector2.zero;
-                arrowRb.angularVelocity = 0f;
+            Vector2 dir = hitDirection.normalized;
+            float offset = 0.25f;
 
-                Vector2 dir = hitDirection.sqrMagnitude > 0.0001f
-                    ? hitDirection.normalized
-                    : Vector2.right;
+            Vector2 arrowPos = headPos - dir * offset;
 
-                float embedOffset = 0.2f;
-                Vector2 arrowPos = headPos - dir * embedOffset;
+            arrow.transform.position = arrowPos;
 
-                arrow.transform.position = arrowPos;
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            arrowRB.MoveRotation(angle);
 
-                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-                arrowRb.MoveRotation(angle);
-
-                FixedJoint2D joint = arrow.gameObject.AddComponent<FixedJoint2D>();
-                joint.connectedBody = headRb;
-                joint.autoConfigureConnectedAnchor = false;
-                joint.anchor = Vector2.zero;
-                joint.connectedAnchor = headRb.transform.InverseTransformPoint(headPos);
-                joint.enableCollision = false;
-            }
+            FixedJoint2D joint = arrow.gameObject.AddComponent<FixedJoint2D>();
+            joint.connectedBody = headRB;
+            joint.enableCollision = false;
         }
 
-        // Root chỉ là empty container → hủy sau cùng
-        Destroy(gameObject, partLifeTime + 0.5f);
+        Destroy(gameObject, lifeTime + 0.3f);
     }
 }
+

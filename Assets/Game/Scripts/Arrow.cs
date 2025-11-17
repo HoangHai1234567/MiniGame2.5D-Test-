@@ -2,80 +2,79 @@ using UnityEngine;
 
 public class Arrow : MonoBehaviour
 {
-    public Rigidbody2D rb;
+    public Rigidbody2D rigidBody2D;
+    private int targetEnemyId = -1;
+    private bool hasHit = false;
 
-    [Header("Lifetime")]
-    public float maxLifeTime = 5f;
+    public float fallDestroyY = -10f;
 
-    private bool launched = false;
-    private float lifeTimer = 0f;
-
-    void Awake()
+    private void Awake()
     {
-        if (!rb) rb = GetComponent<Rigidbody2D>();
+        rigidBody2D = GetComponent<Rigidbody2D>();
     }
 
-    void Update()
+    public void SetTargetEnemy(int id)
     {
-        if (!launched) return;
+        targetEnemyId = id;
+    }
 
-        lifeTimer += Time.deltaTime;
-        if (lifeTimer >= maxLifeTime)
+    public void Launch(Vector2 velocity)
+    {
+        rigidBody2D.velocity = velocity;
+    }
+
+    private void Update()
+    {
+        if (!hasHit)
         {
-            Destroy(gameObject);
-            return;
+            RotateTowardsVelocity();
+
+            // Hủy arrow nếu rơi quá sâu
+            if (transform.position.y < fallDestroyY)
+                Destroy(gameObject);
         }
     }
 
-    void FixedUpdate()
+    private void RotateTowardsVelocity()
     {
-        if (!launched) return;
-        RotateArrow();
-    }
+        Vector2 v = rigidBody2D.velocity;
 
-    // Gọi từ PlayerShoot
-    public void Launch(Vector2 initialVelocity)
-    {
-        if (!rb) rb = GetComponent<Rigidbody2D>();
-
-        rb.velocity = initialVelocity;
-        launched = true;
-
-        RotateArrow();
-    }
-
-    void RotateArrow()
-    {
-        if (!rb) return;
-
-        Vector2 vel = rb.velocity;
-        if (vel.sqrMagnitude < 0.0001f) return;
-
-        float angle = Mathf.Atan2(vel.y, vel.x) * Mathf.Rad2Deg;
-        rb.MoveRotation(angle);
+        if (v.sqrMagnitude > 0.0001f)
+        {
+            float angle = Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (hasHit) return;
         if (!other.CompareTag("Enemy")) return;
 
-        // tìm SkeletonRagdoll trên root
-        SkeletonRagdoll ragdoll = other.GetComponent<SkeletonRagdoll>();
-        if (ragdoll == null)
-            ragdoll = other.GetComponentInParent<SkeletonRagdoll>();
-        if (ragdoll == null) return;
+        EnemyIdentity identity = other.GetComponentInParent<EnemyIdentity>();
+        if (identity != null && targetEnemyId != -1)
+        {
+            if (identity.EnemyId != targetEnemyId)
+                return;
+        }
 
-        Vector2 hitDir = rb != null ? rb.velocity : Vector2.right;
+        hasHit = true;
 
-        // kích hoạt ragdoll: tách head + 6 part, arrow găm vào head
-        ragdoll.ActivateRagdoll(this, hitDir);
+        SkeletonRagdoll ragdoll = other.GetComponentInParent<SkeletonRagdoll>();
+        if (ragdoll != null)
+        {
+            ragdoll.ActivateRagdoll(this, rigidBody2D.velocity.normalized);
+        }
 
-        // tắt collider arrow để không va chạm thêm
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.EnemyDied();
+
+        rigidBody2D.velocity = Vector2.zero;
+        rigidBody2D.angularVelocity = 0f;
+
         Collider2D col = GetComponent<Collider2D>();
         if (col) col.enabled = false;
 
-        // KHÔNG Destroy arrow — nó đang dính vào head
+        Destroy(gameObject, 2f);
     }
-
-
 }

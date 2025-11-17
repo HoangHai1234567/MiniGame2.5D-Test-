@@ -1,77 +1,88 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
     [Header("Enemy")]
-    public GameObject enemyPrefab;        // Prefab enemy
-    public Transform enemyParent;         // (optional) parent để chứa tất cả enemy
+    public GameObject enemyPrefab;        
+    public Transform enemyParent;         
 
-    [Header("Spawn Points")]
-    public Transform[] spawnPoints;       // 9 điểm spawn, kéo vào Inspector
+    [Header("Spawn Points (kéo 9 điểm vào)")]
+    public Transform[] spawnPoints;
 
     [Header("Settings")]
-    public bool spawnOnStart = true;      // Spawn wave đầu khi Start
-    public float checkInterval = 1f;      // Khoảng thời gian kiểm tra còn enemy hay không
+    public float spawnDelay = 0.1f;   // delay nhỏ giữa từng enemy
+    public float waveDelay = 0.3f;    // delay trước wave mới
+
+    private bool isSpawning = false;
+    private int currentWave = 0;
 
     void Start()
     {
-        if (spawnOnStart)
-        {
-            SpawnWave();
-        }
-
-        // Bắt đầu vòng lặp kiểm tra và respawn
-        StartCoroutine(CheckAndRespawnLoop());
+        Debug.Log("[Spawner] Bắt đầu game → spawn wave đầu");
+        SpawnWave();
     }
 
-    void SpawnWave()
+    /// <summary>
+    /// Hàm spawn 1 wave mới
+    /// </summary>
+    public void SpawnWave()
     {
+        if (isSpawning)
+        {
+            Debug.LogWarning("[Spawner] Đang spawn wave khác, không spawn thêm");
+            return;
+        }
+
         if (enemyPrefab == null)
         {
-            Debug.LogWarning("EnemySpawner: Chưa gán enemyPrefab!");
+            Debug.LogError("[Spawner] ❌ enemyPrefab = NULL!");
             return;
         }
 
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
-            Debug.LogWarning("EnemySpawner: Chưa gán spawnPoints!");
+            Debug.LogError("[Spawner] ❌ Không có spawnPoints!");
             return;
         }
 
+        currentWave++;
+        Debug.Log($"[Spawner] ▶ Spawn Wave #{currentWave}");
+
+        StartCoroutine(SpawnWaveRoutine());
+    }
+
+    IEnumerator SpawnWaveRoutine()
+    {
+        isSpawning = true;
+
+        yield return new WaitForSeconds(waveDelay);
+
         foreach (Transform point in spawnPoints)
         {
-            if (point == null) continue;
+            if (point == null)
+            {
+                Debug.LogWarning("[Spawner] ⚠ spawnPoint NULL → bỏ qua");
+                continue;
+            }
 
-            if (enemyParent != null)
-            {
-                Instantiate(enemyPrefab, point.position, point.rotation, enemyParent);
-            }
-            else
-            {
-                Instantiate(enemyPrefab, point.position, point.rotation);
-            }
+            // spawn enemy tại 1 vị trí
+            GameObject e = Instantiate(
+                enemyPrefab,
+                point.position,
+                Quaternion.identity,
+                enemyParent
+            );
+
+            // Đăng ký enemy vào EnemyManager
+            EnemyManager.Instance.RegisterEnemy();
+
+            Debug.Log($"[Spawner] ✓ Spawned enemy tại {point.position}");
+
+            yield return new WaitForSeconds(spawnDelay);
         }
-    }
 
-    IEnumerator CheckAndRespawnLoop()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(checkInterval);
-
-            // Nếu không còn enemy nào trong scene thì spawn wave mới
-            if (!HasAliveEnemies())
-            {
-                SpawnWave();
-            }
-        }
-    }
-
-    bool HasAliveEnemies()
-    {
-        // Dùng Tag "Enemy" cho tất cả enemy
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        return enemies.Length > 0;
+        Debug.Log("[Spawner] ✔ Hoàn tất 1 wave");
+        isSpawning = false;
     }
 }

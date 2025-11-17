@@ -434,6 +434,7 @@ GameObject:
   - component: {fileID: 7960271771816759397}
   - component: {fileID: 1362169653948383353}
   - component: {fileID: 6402098461701158271}
+  - component: {fileID: -6437228120538328387}
   m_Layer: 6
   m_Name: Enemy
   m_TagString: Enemy
@@ -580,8 +581,11 @@ MonoBehaviour:
   playOnEnable: 1
   animator: {fileID: 2015244736457547215}
   idleStateName: Enemy_Idle
-  scriptsToEnable: []
-  collidersToEnable: []
+  scriptsToEnable:
+  - {fileID: 1362169653948383353}
+  - {fileID: -6437228120538328387}
+  collidersToEnable:
+  - {fileID: 8320305550790955652}
 --- !u!114 &1362169653948383353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -602,15 +606,15 @@ MonoBehaviour:
   - {fileID: 4425212907212666012}
   - {fileID: 4822492514434010704}
   - {fileID: 2137548466574218830}
-  partGravityScale: 3
-  minUpForce: 3
-  maxUpForce: 6
-  sideForce: 2
-  maxTorque: 200
-  partLifeTime: 4
-  disableAnimator: 1
-  disableRootCollider: 1
+  gravity: 3
+  upForceMin: 8
+  upForceMax: 15
+  sideForce: 3
+  torque: 200
+  lifeTime: 3
+  anim: {fileID: 2015244736457547215}
   scriptsToDisable: []
+  rootCollider: {fileID: 8320305550790955652}
 --- !u!114 &6402098461701158271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -624,7 +628,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   faceRight: 1
-  flippOfffsetX: 1
+  flipOffsetX: 1
+--- !u!114 &-6437228120538328387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5112954934337882023}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 052414f56e06b1d428cbd6b8b2ec19bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6260787736127711633
 GameObject:
   m_ObjectHideFlags: 0

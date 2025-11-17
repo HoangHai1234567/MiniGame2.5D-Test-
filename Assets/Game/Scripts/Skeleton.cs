@@ -1,13 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Skeleton : MonoBehaviour
 {
-
     [Header("Flip")]
-    public bool faceRight = true;
-    public float flippOfffsetX = 1f;
+    public bool faceRight = true;      // đang nhìn sang phải?
+    public float flipOffsetX = 1f;     // có thể dùng nếu prefab scaleX khác 1
 
     private Transform tower;
     private Vector3 originalScale;
@@ -21,17 +18,17 @@ public class Skeleton : MonoBehaviour
         {
             tower = towerObj.transform;
         }
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+        else
+        {
+            Debug.LogWarning("[Skeleton] Không tìm được object có Tag = 'Tower'");
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (tower == null) return;
+
+        // nếu tower ở bên phải -> nhìn phải
         if (tower.position.x > transform.position.x)
         {
             if (!faceRight)
@@ -47,11 +44,27 @@ public class Skeleton : MonoBehaviour
     void Flip(bool lookRight)
     {
         faceRight = lookRight;
+
         Vector3 scale = originalScale;
-        if (!faceRight)
-        {   
-            scale.x *= -1f;
-        }
+
+        // scale.x dương khi nhìn phải, âm khi nhìn trái
+        scale.x = faceRight ? Mathf.Abs(originalScale.x) : -Mathf.Abs(originalScale.x);
+
         transform.localScale = scale;
     }
+
+    public void TakeDamage(GameObject arrow)
+    {
+        // 1. Găm tên vào đầu (nếu muốn)
+        if (arrow != null)
+        {
+            arrow.transform.SetParent(transform);
+            arrow.GetComponent<Rigidbody2D>().simulated = false;
+            arrow.transform.localPosition = Vector3.up * 0.2f; // chỉnh cho đẹp
+        }
+
+        // 2. Báo EnemyManager
+        EnemyManager.Instance.EnemyDied();
+    }
+
 }
