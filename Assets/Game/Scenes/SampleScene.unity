@@ -13955,6 +13955,7 @@ GameObject:
   - component: {fileID: 500014028}
   - component: {fileID: 500014031}
   - component: {fileID: 500014030}
+  - component: {fileID: 500014032}
   m_Layer: 8
   m_Name: Tower
   m_TagString: Tower
@@ -14101,6 +14102,23 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 7.31, y: 6.3538885}
   m_EdgeRadius: 0
+--- !u!114 &500014032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500014027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f79c2e0ae8830144685124ac02c012a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 20
+  currentHealth: 0
+  shakeOnHit: 1
+  shakeAmount: 0.1
+  shakeTime: 0.1
 --- !u!1 &505138963
 GameObject:
   m_ObjectHideFlags: 0
@@ -15453,6 +15471,7 @@ GameObject:
   - component: {fileID: 678326972}
   - component: {fileID: 678326973}
   - component: {fileID: 678326974}
+  - component: {fileID: 678326975}
   m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
@@ -15610,6 +15629,19 @@ MonoBehaviour:
   firePos: {fileID: 101666945}
   baseArcHeight: 3
   extraHeightPerDistance: 0.3
+--- !u!114 &678326975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678326968}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c6799db7452b694b82c6d3c22f2665e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackPos: {fileID: 1188777588}
 --- !u!1 &689661799
 GameObject:
   m_ObjectHideFlags: 0
@@ -18614,6 +18646,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 429433298}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1188777587
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1188777588}
+  m_Layer: 0
+  m_Name: AttaackPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1188777588
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188777587}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -7.31, y: -3.29, z: 0.0049714097}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1200795324
 GameObject:
@@ -26193,3 +26256,4 @@ SceneRoots:
   - {fileID: 1656245109}
   - {fileID: 740882063}
   - {fileID: 1137036298}
+  - {fileID: 1188777588}

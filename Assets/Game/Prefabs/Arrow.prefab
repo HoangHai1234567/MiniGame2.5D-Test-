@@ -193,5 +193,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7deb7924c483855458405f7306f8f066, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 696056003775115772}
-  maxLifeTime: 5
+  rigidBody2D: {fileID: 0}
+  fallDestroyY: -10

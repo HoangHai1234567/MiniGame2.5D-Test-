@@ -140,5 +140,12 @@ public class EnemyEntranceAssembler : MonoBehaviour
             foreach (var c in collidersToEnable)
                 if (c != null) c.enabled = true;
         }
+
+        // 🔔 Thông báo cho EnemyPullable là entrance đã hoàn thành
+        EnemyPullable pullable = GetComponent<EnemyPullable>();
+        if (pullable != null)
+        {
+            pullable.MarkEntranceComplete();
+        }
     }
 }

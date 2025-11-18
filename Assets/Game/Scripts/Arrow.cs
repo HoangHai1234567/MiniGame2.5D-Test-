@@ -77,4 +77,12 @@ public class Arrow : MonoBehaviour
 
         Destroy(gameObject, 2f);
     }
+
+    private void OnDestroy()
+    {
+        if (!hasHit && targetEnemyId != -1 && PlayerShoot.Instance != null)
+        {
+            PlayerShoot.Instance.ReleaseReservedTarget(targetEnemyId);
+        }
+    }
 }

@@ -89,7 +89,8 @@ public class SkeletonRagdoll : MonoBehaviour
             joint.enableCollision = false;
         }
 
-        Destroy(gameObject, lifeTime + 0.3f);
+        // Destroy(gameObject, lifeTime + 0.3f);
+        Destroy(gameObject);
     }
 }
 
